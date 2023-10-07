@@ -125,9 +125,9 @@ class Company:
         df.loc['Free cash flow'] = free_cash_flow_list
         return df
 
-    def discount_free_cash_flows(self, parameter_list, discount_rate, terminal_growth):
-        free_cash_flow_df = self.get_free_cash_flow_forecast(parameter_list)
-        df = free_cash_flow_df
+    def discount_free_cash_flows(self, free_cash_flow_df, parameter_list, discount_rate, terminal_growth):
+        # free_cash_flow_df = self.get_free_cash_flow_forecast(parameter_list)
+        df = free_cash_flow_df.copy()
         discount_factor_list = [(1 + discount_rate) ** i for i in free_cash_flow_df.columns]
         df.loc['Discount factor'] = discount_factor_list
         present_value_list = df.loc['Free cash flow'] / df.loc['Discount factor']
@@ -140,7 +140,7 @@ class Company:
         df.loc['Net debt', 0] = parameter_list[-1]
         df.loc['Equity value', 0] = df.loc['Company value (enterprise value)', 0] - df.loc['Net debt', 0]
         equity_value = df.loc['Equity value', 0] 
-        df = df.applymap(lambda x: comma_format(x))
+        df = df.map(lambda x: comma_format(x))
         df = df.fillna('')
         column_name_list = range(6)
         df = df[column_name_list]
@@ -164,7 +164,7 @@ ticker_input = st.text_input('Please enter your company ticker here:')
 status_radio = st.radio('Please click Search when you are ready.', ('Entry', 'Search'))
 
 
-@st.cache
+@st.cache_resource
 def get_company_data():
     company = Company(ticker_input)
     return company
@@ -186,21 +186,21 @@ with st.expander('Monte Carlo Simulation'):
 
     parameter_dict_1 = {
         'latest revenue' : 0,
-        'revenue growth': 0,
-        'ebit margin' : 0,
-        'tax rate' : 0,
-        'capex ratio' : 0,
-        'NWC ratio' : 0,
+        'revenue growth': 5,
+        'ebit margin' : 5,
+        'tax rate' : 10,
+        'capex ratio' : 5,
+        'NWC ratio' : 5,
         'net debt' : 0
     }
 
     parameter_dict_2 = {
         'latest revenue' : 0,
-        'revenue growth': 0,
-        'ebit margin' : 0,
-        'tax rate' : 0,
-        'capex ratio' : 0,
-        'NWC ratio' : 0
+        'revenue growth': 20,
+        'ebit margin' : 20,
+        'tax rate' : 20,
+        'capex ratio' : 20,
+        'NWC ratio' : 18
     }
 
     parameter_dict_distribution = {
@@ -368,7 +368,7 @@ with st.expander('Monte Carlo Simulation'):
             forecast_df = company.get_free_cash_flow_forecast(model_input)
             revenue_list_of_lists.append(forecast_df.loc['Revenues'])
             ebit_list_of_lists.append(forecast_df.loc['EBIT'])
-            model_output, equity_value = company.discount_free_cash_flows(model_input, discount_rate, terminal_growth)
+            model_output, equity_value = company.discount_free_cash_flows(forecast_df, model_input, discount_rate, terminal_growth)
             equity_value_list.append(equity_value)
     
     st.header('MC Simulation Output')
